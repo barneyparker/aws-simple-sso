@@ -1,0 +1,41 @@
+{
+  "name": "aws-simple-sso",
+  "version": "1.0.0",
+  "description": "Simple AWS SSO Sign-in",
+  "main": "index.js",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/barneyparker/aws-simple-sso.git"
+  },
+  "bugs": {
+    "url": "https://github.com/barneyparker/aws-simple-sso/issues"
+  },
+  "homepage": "https://github.com/barneyparker/aws-simple-sso#readme",
+  "keywords": [
+    "AWS",
+    "SSO",
+    "Organization",
+    "OIDC"
+  ],
+  "author": "Barney Parker",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "version:patch": "npm version patch --commit-hooks=false",
+    "version:minor": "npm version patch --commit-hooks=false",
+    "version:major": "npm version patch --commit-hooks=false",
+    "postversion": "git push && git push --tags && npm publish"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sso": "^3.598.0",
+    "@aws-sdk/client-sso-oidc": "^3.606.0",
+    "drawio-lib": "^0.0.4",
+    "node-localstorage": "^3.0.5",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "eslint": "^9.6.0",
+    "eslint-plugin-jsdoc": "^48.5.2"
+  }
+}
