@@ -1,8 +1,12 @@
 import { SSO } from '@aws-sdk/client-sso'
 import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
-import { LocalStorage } from 'node-localstorage'
 import prompts from 'prompts'
 
+if(typeof window === 'undefined') {
+  const { LocalStorage } = await import('node-localstorage')
+  // eslint-disable-next-line no-var
+  var localStorage = new LocalStorage('~/.aws/aws-simple-sso')
+}
 /**
  * @typedef {object} SSOOrgUrl
  * @property {string} name      Organization name
@@ -40,7 +44,6 @@ import prompts from 'prompts'
  */
 
 const sso = new SSO({ apiVersion: '2019-06-10' })
-const localStorage = new LocalStorage('~/.aws/aws-simple-sso')
 
 /**
  * Delay function
@@ -82,7 +85,7 @@ export const getOrgUrl = async (matchOrg) => {
 
   if(matchedStartUrls.length === 0) {
     matchedStartUrls = startUrls
-  } else if(matchedStartUrls.length === 1) {
+  } else if(matchedStartUrls.length === 1 && matchedStartUrls[0].startUrl !== null) {
     return matchedStartUrls[0]
   }
 
