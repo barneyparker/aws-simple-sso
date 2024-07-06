@@ -40,7 +40,7 @@ import prompts from 'prompts'
  */
 
 const sso = new SSO({ apiVersion: '2019-06-10' })
-const localStorage = new LocalStorage('./.aws-sso')
+const localStorage = new LocalStorage('~/.aws/aws-simple-sso')
 
 /**
  * Delay function
