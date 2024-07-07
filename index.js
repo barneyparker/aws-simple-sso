@@ -18,6 +18,14 @@ const window = {
     console.log(url)
   },
 }
+
+/**
+ * @typedef {object} AuthenticateParams
+ * @property {MatchFunction} [matchOrg]   Organization match function
+ * @property {MatchFunction} [matchAcc]   Account match function
+ * @property {MatchFunction} [matchRole]  Role match function
+ */
+
 /**
  * @typedef {object} SSOOrgUrl
  * @property {string} name      Organization name
@@ -26,8 +34,8 @@ const window = {
 
 /**
  * @typedef {object} SSOAccount
- * @property {string} accountId    AWS Account Id
- * @property {string} accountName  Account name
+ * @property {string} accountId  AWS Account Id
+ * @property {string} name       Account name
  */
 
 /**
@@ -43,7 +51,7 @@ const window = {
 /**
  * @typedef {object} SSORole
  * @property {string} accountId  AWS Account Id
- * @property {string} roleName   SSO Role name
+ * @property {string} name       SSO Role name
  */
 
 /**
@@ -54,6 +62,11 @@ const window = {
  * @property {Date}   expireTime       Token expiration time
  */
 
+/**
+ * @callback           MatchFunction
+ * @param    {object}  value          Value to match
+ * @returns  {boolean}                True if the value matches
+ */
 const sso = new SSO({ apiVersion: '2019-06-10' })
 
 /**
@@ -68,7 +81,7 @@ const delay = (ms) => {return new Promise((resolve) => setTimeout(resolve, ms))}
 /**
  * Get an Organization Start URL
  *
- * @param   {string}             matchOrg  Partial string to match with the Org name
+ * @param   {MatchFunction}      matchOrg  Partial string to match with the Org name
  * @returns {Promise<SSOOrgUrl>}           Organization Start URL
  */
 export const getOrgUrl = async (matchOrg) => {
@@ -86,21 +99,17 @@ export const getOrgUrl = async (matchOrg) => {
     }
   }
 
-  // add an option to add a new startUrl if we dont have anything in the list
-  if(startUrls.length === 0 || startUrls[0].startUrl !== null) {
-    startUrls.push({ name: 'Add a new AWS Organization', startUrl: null })
-  }
-
   // can we find an entry that matches out match string?
-  let matchedStartUrls = startUrls.filter((s) => s.name.includes(matchOrg))
+  let matchedStartUrls = startUrls.filter(matchOrg)
 
-  if(matchedStartUrls.length === 0) {
-    matchedStartUrls = startUrls
-  } else if(matchedStartUrls.length === 1 && matchedStartUrls[0].startUrl !== null) {
+  // If we only have one item, return it
+  if(matchedStartUrls.length === 1) {
     return matchedStartUrls[0]
   }
 
   // let the user choose one of the startUrls, or add a new one
+  matchedStartUrls.push({ name: 'Add a new startUrl', startUrl: null })
+
   const response = await prompts({
     type: 'select',
     name: 'value',
@@ -108,6 +117,7 @@ export const getOrgUrl = async (matchOrg) => {
     choices: matchedStartUrls.map((s) => ({ title: s.name, value: s })),
   })
 
+  // if the user selected 'Add a new startUrl', prompt for the new startUrl
   if(response.value.startUrl === null) {
     const newUrl = await prompts({
       type: 'text',
@@ -127,10 +137,8 @@ export const getOrgUrl = async (matchOrg) => {
     }
 
     startUrls.push(newOrg)
-
     localStorage.setItem('startUrls', JSON.stringify(startUrls))
 
-    // return the new startUrl
     return newOrg
   }
 
@@ -220,7 +228,7 @@ export const getToken = async (orgUrl) => {
  * Get a list of SSO AWS Accounts
  *
  * @param   {SSOToken}            token     SSO OIDC Token
- * @param   {string}              matchAcc  Partial string to match with the Account name
+ * @param   {MatchFunction}       matchAcc  Partial string to match with the Account name
  * @returns {Promise<SSOAccount>}           SSO Role
  */
 export const getAccount = async (token, matchAcc) => {
@@ -235,14 +243,14 @@ export const getAccount = async (token, matchAcc) => {
     params.nextToken = result.nextToken
   } while(params.nextToken)
 
-  let matchedAccounts = accounts.filter((a) => a.accountName.includes(matchAcc))
+  let matchedAccounts = accounts.filter(matchAcc)
 
   if(matchedAccounts.length === 0) {
     matchedAccounts = accounts
   } else if(matchedAccounts.length === 1) {
     return {
       accountId: matchedAccounts[0].accountId,
-      accountName: matchedAccounts[0].accountName,
+      name: matchedAccounts[0].accountName,
     }
   }
 
@@ -255,7 +263,7 @@ export const getAccount = async (token, matchAcc) => {
 
   return {
     accountId: account.value.accountId,
-    accountName: account.value.accountName,
+    name: account.value.accountName,
   }
 }
 
@@ -264,7 +272,7 @@ export const getAccount = async (token, matchAcc) => {
  *
  * @param   {SSOToken}         token      SSO OIDC Token
  * @param   {string}           accountId  AWS Account Id
- * @param   {string}           matchRole  Partial string to match with the Role name
+ * @param   {MatchFunction}    matchRole  Partial string to match with the Role name
  * @returns {Promise<SSORole>}            SSO Role
  */
 export const getRole = async (token, accountId, matchRole) => {
@@ -280,14 +288,14 @@ export const getRole = async (token, accountId, matchRole) => {
     params.nextToken = result.nextToken
   } while(params.nextToken)
 
-  let matchedRoles = roles.filter((r) => r.roleName.includes(matchRole))
+  let matchedRoles = roles.filter(matchRole)
 
   if(matchedRoles.length === 0) {
     matchedRoles = roles
   } else if(matchedRoles.length === 1) {
     return {
       accountId: matchedRoles[0].accountId,
-      roleName: matchedRoles[0].roleName,
+      name: matchedRoles[0].roleName,
     }
   }
 
@@ -300,7 +308,7 @@ export const getRole = async (token, accountId, matchRole) => {
 
   return {
     accountId: role.value.accountId,
-    roleName: role.value.roleName,
+    name: role.value.roleName,
   }
 }
 
@@ -329,10 +337,24 @@ export const getRoleCredentials = async (token, ssoRole) => {
 /**
  * Simplified Authentication function
  *
- * @param   {object}                  [params]  Optional function parameters
+ * @param   {AuthenticateParams}      [params]  Optional function parameters
  * @returns {Promise<SSOCredentials>}           SSO Role Credentials
  */
 export const authenticate = async (params = {}) => {
+  /**
+   * Just return true to match everything
+   *
+   * @returns {boolean} Always true
+   */
+  const matchAll = () => true
+
+  params = {
+    matchOrg: matchAll,
+    matchAcc: matchAll,
+    matchRole: matchAll,
+    ...params,
+  }
+
   const startUrl = await getOrgUrl(params.matchOrg)
   const token = await getToken(startUrl)
   const account = await getAccount(token, params.matchAcc)
