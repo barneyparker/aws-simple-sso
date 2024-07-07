@@ -23,8 +23,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "version:patch": "npm version patch --commit-hooks=false",
-    "version:minor": "npm version patch --commit-hooks=false",
-    "version:major": "npm version patch --commit-hooks=false",
+    "version:minor": "npm version minor --commit-hooks=false",
+    "version:major": "npm version major --commit-hooks=false",
     "postversion": "git push && git push --tags && npm publish",
     "doc": "jsdoc2md -t README.md index.js > README.md"
   },
