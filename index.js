@@ -329,16 +329,14 @@ export const getRoleCredentials = async (token, ssoRole) => {
 /**
  * Simplified Authentication function
  *
- * @param   {string}                  matchOrg   Partial string to match with the Org name
- * @param   {string}                  matchAcc   Partial string to match with the Account name
- * @param   {string}                  matchRole  Partial string to match with the Role name
- * @returns {Promise<SSOCredentials>}            SSO Role Credentials
+ * @param   {object}                  [params]  Optional function parameters
+ * @returns {Promise<SSOCredentials>}           SSO Role Credentials
  */
-export const authenticate = async (matchOrg, matchAcc, matchRole) => {
-  const startUrl = await getOrgUrl(matchOrg)
+export const authenticate = async (params = {}) => {
+  const startUrl = await getOrgUrl(params.matchOrg)
   const token = await getToken(startUrl)
-  const account = await getAccount(token, matchAcc)
-  const role = await getRole(token, account.accountId, matchRole)
+  const account = await getAccount(token, params.matchAcc)
+  const role = await getRole(token, account.accountId, params.matchRole)
   const credentials = await getRoleCredentials(token, role)
 
   return credentials
