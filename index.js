@@ -1,11 +1,22 @@
 import { SSO } from '@aws-sdk/client-sso'
 import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
 import prompts from 'prompts'
+import { LocalStorage } from 'node-localstorage'
+import { join } from 'node:path'
 
-if(typeof window === 'undefined') {
-  const { LocalStorage } = await import('node-localstorage')
-  // eslint-disable-next-line no-var
-  var localStorage = new LocalStorage('~/.aws/aws-simple-sso')
+const cachePath = join(process.env.HOME, '.aws/aws-simple-sso')
+const localStorage = new LocalStorage(cachePath)
+const window = {
+  /**
+   * We cant open in a browser, so just log the URL
+   * In a browser, this would open the URL in a new tab
+   *
+   * @param {string} url  URL to open
+   */
+  open: (url) => {
+    console.log('Please visit the following URL to authenticate:')
+    console.log(url)
+  },
 }
 /**
  * @typedef {object} SSOOrgUrl
@@ -172,13 +183,7 @@ export const getToken = async (orgUrl) => {
     throw(new Error('Error starting device authorization: ' + e.message))
   }
 
-  if(typeof window !== 'undefined') {
-    // eslint-disable-next-line no-undef
-    window.open(ssoUrl.verificationUriComplete)
-  } else {
-    console.log('Please visit the following URL to authenticate:')
-    console.log(ssoUrl.verificationUriComplete)
-  }
+  window.open(ssoUrl.verificationUriComplete)
 
   let maxIterations = 120
   do{
