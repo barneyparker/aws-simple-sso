@@ -8,153 +8,185 @@ Simple AWS SSO Sign-in
 npm install aws-simple-sso
 ```
 
-## Usage
+# API Reference
+Simplified AWS SSO authentication
 
-```javascript
+**Example**  
+```js
 import { authenticate } from 'aws-simple-sso'
-
-const main = async () => {
-  const credentials = await authenticate('Prod', 'sre_dev', 'Admin')
-  console.log(credentials)
-}
-
-main()
+const credentials = await authenticate()
 ```
+<a name="module_aws-simple-sso.authenticate"></a>
 
-## API
+### aws-simple-sso.authenticate ⇒ <code>Promise.&lt;SSOCredentials&gt;</code>
+Simplified Authentication function
 
-### authenticate(matchOrg, matchAcc, matchRole)
+**Kind**: static constant of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>Promise.&lt;SSOCredentials&gt;</code> - SSO Role Credentials  
 
-Quick method of fully authenticating against AWS SSO.
-Parameters provide partial matches for Organization, Account, and Role.
-
-| Parameter | Type | Description |
+| Param | Type | Description |
 | --- | --- | --- |
-| matchOrg | Type: `string` | Partial Match for Organization Name |
-| matchAcc | Type: `string` | Partial Match for Account Name |
-| matchRole | Type: `string` | Partial Match for Role Name |
+| [params] | <code>AuthenticateParams</code> | Optional function parameters |
 
-Returns:
+<a name="module_aws-simple-sso.getOrgUrl"></a>
 
-```json
-{
-  accessKeyId: string,
-  secretAccessKey: string,
-  sessionToken: string,
-  expiration: Date
-}
-```
+### aws-simple-sso.getOrgUrl ⇒ <code>Promise.&lt;SSOOrgUrl&gt;</code>
+Get an Organization Start URL
 
-### getOrgUrl(matchOrg)
+**Kind**: static constant of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>Promise.&lt;SSOOrgUrl&gt;</code> - Organization Start URL  
 
-Get an Organization StartURL for AWS SSO login
-
-- If none are known, the user will be prompted to add a new Organization URL and name
-
-- If the Organization name cannot be found via the `matchOrg` parameter, the user will be prompted to select from a list of known Organizations
-
-| Parameter | Type | Description |
+| Param | Type | Description |
 | --- | --- | --- |
-| matchOrg | Type: `string` | Partial Match for Organization Name |
+| matchOrg | <code>MatchFunction</code> | Partial string to match with the Org name |
 
-Returns:
+<a name="module_aws-simple-sso.getToken"></a>
 
-Type: `SSOOrgUrl`
+### aws-simple-sso.getToken ⇒ <code>Promise.&lt;SSOToken&gt;</code>
+Get an SSO OIDC Token
 
-```json
-{
-  orgName: string,
-  orgUrl: string
-}
-```
+**Kind**: static constant of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>Promise.&lt;SSOToken&gt;</code> - SSO OIDC Token  
 
-### getToken(orgUrl)
-
-Get an AWS SSO OIDC token
-
-| Parameter | Type | Description |
+| Param | Type | Description |
 | --- | --- | --- |
-| orgUrl | Type: `SSOOrgUrl` | AWS Organization URL |
+| orgUrl | <code>SSOOrgUrl</code> | SSO Start URL |
 
-Returns:
+<a name="module_aws-simple-sso.getAccount"></a>
 
-Type: `SSOToken`
+### aws-simple-sso.getAccount ⇒ <code>Promise.&lt;SSOAccount&gt;</code>
+Get a list of SSO AWS Accounts
 
-```json
-{
-  accessToken: string (optional)
-  tokenType: string (optional)
-  expiresIn: number (optional)
-  expireTime: Date (optional)
-  refreshToken: string (optional)
-  idToken: string (optional)
-}
-```
+**Kind**: static constant of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>Promise.&lt;SSOAccount&gt;</code> - SSO Role  
 
-### getAccount(token, matchAcc)
-
-Get an AWS Account via the SSO service
-
-- If the Account name cannot be found via the `matchAcc` parameter, the user will be prompted to select from a list of known Accounts
-
-| Parameter | Type | Description |
+| Param | Type | Description |
 | --- | --- | --- |
-| token | Type: `SSOToken` | AWS SSO Token |
-| matchAcc | Type: `string` | Partial Match for Account Name |
+| token | <code>SSOToken</code> | SSO OIDC Token |
+| matchAcc | <code>MatchFunction</code> | Partial string to match with the Account name |
 
-Returns:
+<a name="module_aws-simple-sso.getRole"></a>
 
-Type: `SSOAccount`
+### aws-simple-sso.getRole ⇒ <code>Promise.&lt;SSORole&gt;</code>
+Get an SSO Role
 
-```json
-{
-  accountId: string,
-  accountName: string
-}
-```
+**Kind**: static constant of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>Promise.&lt;SSORole&gt;</code> - SSO Role  
 
-### getRole(token, accountId, matchRole)
-
-Get an AWS Role via the SSO service
-
-- If the Role name cannot be found via the `matchRole` parameter, the user will be prompted to select from a list of known Roles
-
-| Parameter | Type | Description |
+| Param | Type | Description |
 | --- | --- | --- |
-| token | Type: `SSOToken` | AWS SSO Token |
-| accountId | Type: `string` | AWS Account ID |
-| matchRole | Type: `string` | Partial Match for Role Name |
+| token | <code>SSOToken</code> | SSO OIDC Token |
+| accountId | <code>string</code> | AWS Account Id |
+| matchRole | <code>MatchFunction</code> | Partial string to match with the Role name |
 
-Returns:
+<a name="module_aws-simple-sso.getRoleCredentials"></a>
 
-Type: `SSORole`
+### aws-simple-sso.getRoleCredentials ⇒ <code>Promise.&lt;SSOCredentials&gt;</code>
+Get SSO Role Credentials
 
-```json
-{
-  accountId: string
-  roleName: string,
-}
-```
+**Kind**: static constant of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>Promise.&lt;SSOCredentials&gt;</code> - SSO Role Credentials  
 
-### getRoleCredentials(token, ssoRole)
-
-Get AWS Role Credentials via the SSO service
-
-| Parameter | Type | Description |
+| Param | Type | Description |
 | --- | --- | --- |
-| token | Type: `SSOToken` | AWS SSO Token |
-| ssoRole | Type: `SSORole` | AWS SSO Role |
+| token | <code>SSOToken</code> | SSO OIDC Token |
+| ssoRole | <code>SSORole</code> | SSO Role structure |
 
-Returns:
+<a name="module_aws-simple-sso..delay"></a>
 
-```json
-{
-  accessKeyId: string,
-  secretAccessKey: string,
-  sessionToken: string,
-  expiration: Date
-}
-```
+### aws-simple-sso~delay(ms) ⇒ <code>Promise</code>
+Delay function
+
+**Kind**: inner method of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>Promise</code> - Promise that resolves after the delay  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ms | <code>number</code> | Delay in milliseconds |
+
+<a name="module_aws-simple-sso..AuthenticateParams"></a>
+
+### aws-simple-sso~AuthenticateParams : <code>object</code>
+**Kind**: inner typedef of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| [matchOrg] | <code>MatchFunction</code> | Organization match function |
+| [matchAcc] | <code>MatchFunction</code> | Account match function |
+| [matchRole] | <code>MatchFunction</code> | Role match function |
+
+<a name="module_aws-simple-sso..SSOOrgUrl"></a>
+
+### aws-simple-sso~SSOOrgUrl : <code>object</code>
+**Kind**: inner typedef of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| name | <code>string</code> | Organization name |
+| startUrl | <code>string</code> | SSO Start URL |
+
+<a name="module_aws-simple-sso..SSOAccount"></a>
+
+### aws-simple-sso~SSOAccount : <code>object</code>
+**Kind**: inner typedef of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| accountId | <code>string</code> | AWS Account Id |
+| name | <code>string</code> | Account name |
+
+<a name="module_aws-simple-sso..SSOToken"></a>
+
+### aws-simple-sso~SSOToken : <code>object</code>
+**Kind**: inner typedef of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| [accessToken] | <code>string</code> | AWS Access Token |
+| [tokenType] | <code>string</code> | Token type |
+| [expiresIn] | <code>number</code> | Token expiration in seconds |
+| [expireTime] | <code>Date</code> | Token expiration time |
+| [refreshToken] | <code>string</code> | Refresh token |
+| [idToken] | <code>string</code> | ID token |
+
+<a name="module_aws-simple-sso..SSORole"></a>
+
+### aws-simple-sso~SSORole : <code>object</code>
+**Kind**: inner typedef of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| accountId | <code>string</code> | AWS Account Id |
+| name | <code>string</code> | SSO Role name |
+
+<a name="module_aws-simple-sso..SSOCredentials"></a>
+
+### aws-simple-sso~SSOCredentials : <code>object</code>
+**Kind**: inner typedef of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| accessKeyId | <code>string</code> | AWS Access Key Id |
+| secretAccessKey | <code>string</code> | AWS Secret Access Key |
+| sessionToken | <code>string</code> | AWS Session Token |
+| expireTime | <code>Date</code> | Token expiration time |
+
+<a name="module_aws-simple-sso..MatchFunction"></a>
+
+### aws-simple-sso~MatchFunction ⇒ <code>boolean</code>
+**Kind**: inner typedef of [<code>aws-simple-sso</code>](#module_aws-simple-sso)  
+**Returns**: <code>boolean</code> - True if the value matches  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| value | <code>object</code> | Value to match |
+
 
 ## License
 

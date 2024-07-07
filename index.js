@@ -1,3 +1,11 @@
+/**
+ * AWS Simple SSO
+ * @module aws-simple-sso
+ * @description Simplified AWS SSO authentication
+ * @example
+ * import { authenticate } from 'aws-simple-sso'
+ * const credentials = await authenticate()
+ */
 import { SSO } from '@aws-sdk/client-sso'
 import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
 import prompts from 'prompts'
@@ -10,7 +18,6 @@ const window = {
   /**
    * We cant open in a browser, so just log the URL
    * In a browser, this would open the URL in a new tab
-   *
    * @param {string} url  URL to open
    */
   open: (url) => {
@@ -71,12 +78,38 @@ const sso = new SSO({ apiVersion: '2019-06-10' })
 
 /**
  * Delay function
- *
  * @param   {number}  ms  Delay in milliseconds
  * @returns {Promise}     Promise that resolves after the delay
  */
 const delay = (ms) => {return new Promise((resolve) => setTimeout(resolve, ms))}
 
+/**
+ * Simplified Authentication function
+ * @param   {AuthenticateParams}      [params]  Optional function parameters
+ * @returns {Promise<SSOCredentials>}           SSO Role Credentials
+ */
+export const authenticate = async (params = {}) => {
+  /**
+   * Just return true to match everything
+   * @returns {boolean} Always true
+   */
+  const matchAll = () => true
+
+  params = {
+    matchOrg: matchAll,
+    matchAcc: matchAll,
+    matchRole: matchAll,
+    ...params,
+  }
+
+  const startUrl = await getOrgUrl(params.matchOrg)
+  const token = await getToken(startUrl)
+  const account = await getAccount(token, params.matchAcc)
+  const role = await getRole(token, account.accountId, params.matchRole)
+  const credentials = await getRoleCredentials(token, role)
+
+  return credentials
+}
 
 /**
  * Get an Organization Start URL
@@ -148,7 +181,6 @@ export const getOrgUrl = async (matchOrg) => {
 
 /**
  * Get an SSO OIDC Token
- *
  * @param   {SSOOrgUrl}         orgUrl  SSO Start URL
  * @returns {Promise<SSOToken>}         SSO OIDC Token
  */
@@ -226,7 +258,6 @@ export const getToken = async (orgUrl) => {
 
 /**
  * Get a list of SSO AWS Accounts
- *
  * @param   {SSOToken}            token     SSO OIDC Token
  * @param   {MatchFunction}       matchAcc  Partial string to match with the Account name
  * @returns {Promise<SSOAccount>}           SSO Role
@@ -269,7 +300,6 @@ export const getAccount = async (token, matchAcc) => {
 
 /**
  * Get an SSO Role
- *
  * @param   {SSOToken}         token      SSO OIDC Token
  * @param   {string}           accountId  AWS Account Id
  * @param   {MatchFunction}    matchRole  Partial string to match with the Role name
@@ -314,7 +344,6 @@ export const getRole = async (token, accountId, matchRole) => {
 
 /**
  * Get SSO Role Credentials
- *
  * @param   {SSOToken}                token    SSO OIDC Token
  * @param   {SSORole}                 ssoRole  SSO Role structure
  * @returns {Promise<SSOCredentials>}          SSO Role Credentials
@@ -323,7 +352,7 @@ export const getRoleCredentials = async (token, ssoRole) => {
   const creds = await sso.getRoleCredentials({
     accessToken: token.accessToken,
     accountId: ssoRole.accountId,
-    roleName: ssoRole.roleName,
+    roleName: ssoRole.name,
   })
 
   return {
@@ -332,34 +361,4 @@ export const getRoleCredentials = async (token, ssoRole) => {
     sessionToken: creds.roleCredentials.sessionToken,
     expireTime: new Date(creds.roleCredentials.expiration),
   }
-}
-
-/**
- * Simplified Authentication function
- *
- * @param   {AuthenticateParams}      [params]  Optional function parameters
- * @returns {Promise<SSOCredentials>}           SSO Role Credentials
- */
-export const authenticate = async (params = {}) => {
-  /**
-   * Just return true to match everything
-   *
-   * @returns {boolean} Always true
-   */
-  const matchAll = () => true
-
-  params = {
-    matchOrg: matchAll,
-    matchAcc: matchAll,
-    matchRole: matchAll,
-    ...params,
-  }
-
-  const startUrl = await getOrgUrl(params.matchOrg)
-  const token = await getToken(startUrl)
-  const account = await getAccount(token, params.matchAcc)
-  const role = await getRole(token, account.accountId, params.matchRole)
-  const credentials = await getRoleCredentials(token, role)
-
-  return credentials
 }
