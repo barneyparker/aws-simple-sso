@@ -90,19 +90,23 @@ const delay = (ms) => {return new Promise((resolve) => setTimeout(resolve, ms))}
  * @returns {MatchFunction}                      Matcher function
  */
 const createMatcher = (match) => {
+  // if none provided, match all
   if(!match) {
     return (a) => a ? true : true
   }
 
+  // if it's already a function, just return it
   if(match instanceof Function) {
     return match
   }
 
+  // if its a RegExp, return a function that tests the name
   if(match instanceof RegExp) {
-    return (a) => match.test(a)
+    return (a) => match.test(a.name)
   }
 
-  return (a) => (a) === match
+  // if it's a string, return a function that matches the name
+  return (a) => a.name === match
 }
 
 /**
