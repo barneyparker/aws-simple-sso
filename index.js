@@ -115,19 +115,6 @@ const createMatcher = (match) => {
  * @returns {Promise<SSOCredentials>}           SSO Role Credentials
  */
 export const authenticate = async (params = {}) => {
-  /**
-   * Just return true to match everything
-   * @returns {boolean} Always true
-   */
-  const matchAll = () => true
-
-  params = {
-    matchOrg: matchAll,
-    matchAcc: matchAll,
-    matchRole: matchAll,
-    ...params,
-  }
-
   const startUrl = await getOrgUrl(params.matchOrg)
   const token = await getToken(startUrl)
   const account = await getAccount(token, params.matchAcc)
@@ -299,7 +286,10 @@ export const getAccount = async (token, matchAcc) => {
 
   do{
     const result = await sso.listAccounts(params)
-    accounts.push(...result.accountList)
+    accounts.push(...result.accountList.map((acc) => ({
+      accountId: acc.accountId,
+      name: acc.accountName
+    })))
     params.nextToken = result.nextToken
   } while(params.nextToken)
 
@@ -310,7 +300,7 @@ export const getAccount = async (token, matchAcc) => {
   } else if(matchedAccounts.length === 1) {
     return {
       accountId: matchedAccounts[0].accountId,
-      name: matchedAccounts[0].accountName,
+      name: matchedAccounts[0].name,
     }
   }
 
@@ -318,7 +308,7 @@ export const getAccount = async (token, matchAcc) => {
     type: 'select',
     name: 'value',
     message: 'Select an account',
-    choices: matchedAccounts.map((a) => ({ title: a.accountName, value: a })).sort((a, b) => a.title.localeCompare(b.title)),
+    choices: matchedAccounts.map((a) => ({ title: a.name, value: a })).sort((a, b) => a.title.localeCompare(b.title)),
   })
 
   return {
@@ -344,7 +334,11 @@ export const getRole = async (token, accountId, matchRole) => {
 
   do {
     const result = await sso.listAccountRoles(params)
-    roles.push(...result.roleList)
+    roles.push(...result.roleList.map((role) => ({
+      accountId: accountId,
+      name: role.roleName,
+    }))
+    )
     params.nextToken = result.nextToken
   } while(params.nextToken)
 
@@ -355,7 +349,7 @@ export const getRole = async (token, accountId, matchRole) => {
   } else if(matchedRoles.length === 1) {
     return {
       accountId: matchedRoles[0].accountId,
-      name: matchedRoles[0].roleName,
+      name: matchedRoles[0].name,
     }
   }
 
@@ -363,7 +357,7 @@ export const getRole = async (token, accountId, matchRole) => {
     type: 'select',
     name: 'value',
     message: 'Select a role',
-    choices: matchedRoles.map((r) => ({ title: r.roleName, value: r })).sort((a, b) => a.title.localeCompare(b.title)),
+    choices: matchedRoles.map((r) => ({ title: r.name, value: r })).sort((a, b) => a.title.localeCompare(b.title)),
   })
 
   return {
