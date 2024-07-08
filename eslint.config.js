@@ -259,7 +259,7 @@ export default [
       'jsdoc/require-returns-description': 1,
       'jsdoc/require-returns-type': 1,
       'jsdoc/tag-lines': [
-        1,
+        0,
         'always',
         {
           count: 0,

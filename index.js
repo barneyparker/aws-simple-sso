@@ -28,9 +28,9 @@ const window = {
 
 /**
  * @typedef {object} AuthenticateParams
- * @property {MatchFunction} [matchOrg]   Organization match function
- * @property {MatchFunction} [matchAcc]   Account match function
- * @property {MatchFunction} [matchRole]  Role match function
+ * @property {MatchFunction|string|RegExp} [matchOrg]   Organization match function
+ * @property {MatchFunction|string|RegExp} [matchAcc]   Account match function
+ * @property {MatchFunction|string|RegExp} [matchRole]  Role match function
  */
 
 /**
@@ -74,6 +74,7 @@ const window = {
  * @param    {object}  value          Value to match
  * @returns  {boolean}                True if the value matches
  */
+
 const sso = new SSO({ apiVersion: '2019-06-10' })
 
 /**
@@ -82,6 +83,27 @@ const sso = new SSO({ apiVersion: '2019-06-10' })
  * @returns {Promise}     Promise that resolves after the delay
  */
 const delay = (ms) => {return new Promise((resolve) => setTimeout(resolve, ms))}
+
+/**
+ * Create a matcher function
+ * @param   {MatchFunction|string|RegExp} match  Match function, string, or regex
+ * @returns {MatchFunction}                      Matcher function
+ */
+const createMatcher = (match) => {
+  if(!match) {
+    return (a) => a ? true : true
+  }
+
+  if(match instanceof Function) {
+    return match
+  }
+
+  if(match instanceof RegExp) {
+    return (a) => match.test(a)
+  }
+
+  return (a) => (a) === match
+}
 
 /**
  * Simplified Authentication function
@@ -114,10 +136,12 @@ export const authenticate = async (params = {}) => {
 /**
  * Get an Organization Start URL
  *
- * @param   {MatchFunction}      matchOrg  Partial string to match with the Org name
- * @returns {Promise<SSOOrgUrl>}           Organization Start URL
+ * @param   {MatchFunction|string|RegExp} matchOrg  Partial string to match with the Org name
+ * @returns {Promise<SSOOrgUrl>}                    Organization Start URL
  */
 export const getOrgUrl = async (matchOrg) => {
+  matchOrg = createMatcher(matchOrg)
+
   // see if we have a list of startUrl values in localStorage
   const cachedStartUrls = localStorage.getItem('startUrls')
   const startUrls = []
@@ -258,11 +282,12 @@ export const getToken = async (orgUrl) => {
 
 /**
  * Get a list of SSO AWS Accounts
- * @param   {SSOToken}            token     SSO OIDC Token
- * @param   {MatchFunction}       matchAcc  Partial string to match with the Account name
- * @returns {Promise<SSOAccount>}           SSO Role
+ * @param   {SSOToken}                    token     SSO OIDC Token
+ * @param   {MatchFunction|string|RegExp} matchAcc  Partial string to match with the Account name
+ * @returns {Promise<SSOAccount>}                   SSO Role
  */
 export const getAccount = async (token, matchAcc) => {
+  matchAcc = createMatcher(matchAcc)
   const accounts = []
   const params = {
     accessToken: token.accessToken,
@@ -300,12 +325,13 @@ export const getAccount = async (token, matchAcc) => {
 
 /**
  * Get an SSO Role
- * @param   {SSOToken}         token      SSO OIDC Token
- * @param   {string}           accountId  AWS Account Id
- * @param   {MatchFunction}    matchRole  Partial string to match with the Role name
- * @returns {Promise<SSORole>}            SSO Role
+ * @param   {SSOToken}                    token      SSO OIDC Token
+ * @param   {string}                      accountId  AWS Account Id
+ * @param   {MatchFunction|string|RegExp} matchRole  Partial string to match with the Role name
+ * @returns {Promise<SSORole>}                       SSO Role
  */
 export const getRole = async (token, accountId, matchRole) => {
+  matchRole = createMatcher(matchRole)
   const roles = []
   const params = {
     accessToken: token.accessToken,
