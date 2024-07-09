@@ -210,6 +210,9 @@ export const getOrgUrl = async (matchOrg) => {
  * @returns {Promise<SSOToken>}         SSO OIDC Token
  */
 export const getToken = async (orgUrl) => {
+  // create the SSO client early
+  sso = new SSO({ apiVersion: '2019-06-10', region: orgUrl.region })
+
   // check to see if we have a cached token for this startUrl
   const cacheKey = `sso-${orgUrl.name}`
 
@@ -223,7 +226,6 @@ export const getToken = async (orgUrl) => {
 
   // create the SSO-OIDC client
   const oidc = new SSOOIDC({ apiVersion: '2019-06-10', region: orgUrl.region })
-  sso = new SSO({ apiVersion: '2019-06-10', region: orgUrl.region })
 
   let regClient
   try {
