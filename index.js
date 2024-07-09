@@ -37,6 +37,7 @@ const window = {
  * @typedef {object} SSOOrgUrl
  * @property {string} name      Organization name
  * @property {string} startUrl  SSO Start URL
+ * @property {string} region    SSO Region
  */
 
 /**
@@ -75,7 +76,7 @@ const window = {
  * @returns  {boolean}                True if the value matches
  */
 
-const sso = new SSO({ apiVersion: '2019-06-10' })
+let sso
 
 /**
  * Delay function
@@ -147,16 +148,18 @@ export const getOrgUrl = async (matchOrg) => {
     }
   }
 
+  // if there is no startUrl === null entry, add one to the list
+  if (!startUrls.find((s) => s.startUrl === null)) {
+    startUrls.unshift({ name: 'Add a new startUrl', startUrl: null })
+  }
+
   // can we find an entry that matches out match string?
   let matchedStartUrls = startUrls.filter(matchOrg)
 
   // If we only have one item, return it
-  if(matchedStartUrls.length === 1) {
+  if(matchedStartUrls.length === 1 && matchedStartUrls[0].startUrl !== null) {
     return matchedStartUrls[0]
   }
-
-  // let the user choose one of the startUrls, or add a new one
-  matchedStartUrls.push({ name: 'Add a new startUrl', startUrl: null })
 
   const response = await prompts({
     type: 'select',
@@ -179,9 +182,16 @@ export const getOrgUrl = async (matchOrg) => {
       message: 'Enter the name for the new AWS Organization',
     })
 
+    const newRegion = await prompts({
+      type: 'text',
+      name: 'value',
+      message: 'Enter the SSO region for the new AWS Organization',
+    })
+
     const newOrg = {
       name: newName.value,
       startUrl: newUrl.value,
+      region: newRegion.value,
     }
 
     startUrls.push(newOrg)
@@ -212,7 +222,8 @@ export const getToken = async (orgUrl) => {
   }
 
   // create the SSO-OIDC client
-  const oidc = new SSOOIDC({ apiVersion: '2019-06-10' })
+  const oidc = new SSOOIDC({ apiVersion: '2019-06-10', region: orgUrl.region })
+  sso = new SSO({ apiVersion: '2019-06-10', region: orgUrl.region })
 
   let regClient
   try {
@@ -288,7 +299,7 @@ export const getAccount = async (token, matchAcc) => {
     const result = await sso.listAccounts(params)
     accounts.push(...result.accountList.map((acc) => ({
       accountId: acc.accountId,
-      name: acc.accountName
+      name: acc.accountName,
     })))
     params.nextToken = result.nextToken
   } while(params.nextToken)
@@ -313,7 +324,7 @@ export const getAccount = async (token, matchAcc) => {
 
   return {
     accountId: account.value.accountId,
-    name: account.value.accountName,
+    name: account.value.name,
   }
 }
 
@@ -362,7 +373,7 @@ export const getRole = async (token, accountId, matchRole) => {
 
   return {
     accountId: role.value.accountId,
-    name: role.value.roleName,
+    name: role.value.name,
   }
 }
 
