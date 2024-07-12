@@ -26,7 +26,7 @@
     "version:minor": "npm version minor --commit-hooks=false",
     "version:major": "npm version major --commit-hooks=false",
     "postversion": "git push && git push --tags && npm publish",
-    "doc": "jsdoc2md -t README.md index.js > README.md"
+    "doc": "jsdoc2md -t README.hbs index.js > README.md"
   },
   "dependencies": {
     "@aws-sdk/client-sso": "^3.598.0",
