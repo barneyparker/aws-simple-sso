@@ -12,6 +12,9 @@ import prompts from 'prompts'
 import { LocalStorage } from 'node-localstorage'
 import { join } from 'node:path'
 
+if(!process.env.HOME) {
+  throw(new Error('HOME environment variable not set'))
+}
 const cachePath = join(process.env.HOME, '.aws/aws-simple-sso')
 const localStorage = new LocalStorage(cachePath)
 const window = {
@@ -72,16 +75,21 @@ const window = {
 
 /**
  * @callback           MatchFunction
- * @param    {object}  value          Value to match
+ * @param    {SSOOrgUrl | SSOAccount | SSORole}  value          Value to match
  * @returns  {boolean}                True if the value matches
  */
 
+// Helper Types:
+/** @typedef {import('@aws-sdk/client-sso').RoleInfo} RoleInfo */
+/** @typedef {import('@aws-sdk/client-sso').AccountInfo} AccountInfo*/
+
+/** @type {any} note, this should be an actual thing, but i dont know enough just yet :D */
 let sso
 
 /**
  * Delay function
  * @param   {number}  ms  Delay in milliseconds
- * @returns {Promise}     Promise that resolves after the delay
+ * @returns {Promise<void>}     Promise that resolves after the delay
  */
 const delay = (ms) => {return new Promise((resolve) => setTimeout(resolve, ms))}
 
@@ -116,6 +124,10 @@ const createMatcher = (match) => {
  * @returns {Promise<SSOCredentials>}           SSO Role Credentials
  */
 export const authenticate = async (params = {}) => {
+  if(!params.matchOrg) { params.matchOrg = '' }
+  if(!params.matchAcc) { params.matchAcc = '' }
+  if(!params.matchRole) { params.matchRole = '' }
+
   const startUrl = await getOrgUrl(params.matchOrg)
   const token = await getToken(startUrl)
   const account = await getAccount(token, params.matchAcc)
@@ -234,7 +246,7 @@ export const getToken = async (orgUrl) => {
       clientType: 'public',
       scopes: ['aws.credential-provider'],
     })
-  } catch (e) {
+  } catch (/** @type {any} */e) {
     console.log(e)
     throw(new Error('Error registering SSO client: ' + e.message))
   }
@@ -246,11 +258,14 @@ export const getToken = async (orgUrl) => {
       clientSecret: regClient.clientSecret,
       startUrl: orgUrl.startUrl,
     })
-  } catch (e) {
+  } catch (/** @type {any} */e) {
     console.log(e)
     throw(new Error('Error starting device authorization: ' + e.message))
   }
 
+  if(!ssoUrl?.verificationUriComplete) {
+    throw(new Error('Error starting device authorization: No verificationUriComplete'))
+  }
   window.open(ssoUrl.verificationUriComplete)
 
   let maxIterations = 120
@@ -266,6 +281,10 @@ export const getToken = async (orgUrl) => {
         deviceCode: ssoUrl.deviceCode,
       })
 
+      if(!token.expiresIn) {
+        throw(new Error('No expiresIn value in token')) // NOTE: this may be problematic?
+      }
+
       // write the token to localStorage
       localStorage.setItem(cacheKey, JSON.stringify({
         token,
@@ -273,7 +292,7 @@ export const getToken = async (orgUrl) => {
       }))
 
       return token
-    } catch (e) {
+    } catch (/** @type {any} */e) {
       if(e.error !== 'authorization_pending' && e.error !== 'slow_down') {
         console.log(e)
       }
@@ -295,11 +314,12 @@ export const getAccount = async (token, matchAcc) => {
   const accounts = []
   const params = {
     accessToken: token.accessToken,
+    nextToken: undefined
   }
 
   do{
     const result = await sso.listAccounts(params)
-    accounts.push(...result.accountList.map((acc) => ({
+    accounts.push(...result.accountList.map((/** @type {AccountInfo} */ acc) => ({
       accountId: acc.accountId,
       name: acc.accountName,
     })))
@@ -343,11 +363,12 @@ export const getRole = async (token, accountId, matchRole) => {
   const params = {
     accessToken: token.accessToken,
     accountId: accountId,
+    nextToken: undefined
   }
 
   do {
     const result = await sso.listAccountRoles(params)
-    roles.push(...result.roleList.map((role) => ({
+    roles.push(...result.roleList.map((/** @type {RoleInfo} */role) => ({
       accountId: accountId,
       name: role.roleName,
     }))
